@@ -1,4 +1,4 @@
-<div align="center">
+<div style="text-align: center;">
 
 # AI Hub
 
@@ -54,7 +54,7 @@ AI Hub 是一款 Flutter 构建的 Android 应用，为用户提供**国内外�
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/YOUR_USERNAME/ai-hub.git
+git clone https://github.com/XU-QiYi/ai-hub.git
 cd ai-hub
 
 # 2. 获取依赖
@@ -103,17 +103,22 @@ ai_hub/
 
 ## 截图展示
 
-<div align="center">
 
 > 将截图放入 `screenshots/` 目录后取消下方注释即可展示
 
-<!-- ![首页](screenshots/home.png) -->
-<!-- ![暗黑模式](screenshots/dark_mode.png) -->
-<!-- ![设置页](screenshots/settings.png) -->
-<!-- ![搜索功能](screenshots/search.png) -->
-
-*截图占位 — 请在 `screenshots/` 目录中添加截图后启用*
-
+<div style="text-align: center;">
+<table>
+  <tr>
+    <td>
+      <img src="screenshots/home.jpg" width="300" alt="主页（浅色）"><img src="screenshots/dark_mode.jpg" width="300" alt="主题（深色）">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="screenshots/settings.jpg" width="300" alt="设置"><img src="screenshots/search.jpg" width="300" alt="搜索">
+    </td>
+  </tr>
+</table>
 </div>
 
 ## 开发说明
@@ -152,20 +157,5 @@ flutter test
 - 导入顺序：Dart 核心 → Flutter → 第三方 → 项目文件
 - MethodChannel 命名格式：`com.aihub.{功能}`
 
-## License
-
-本项目采用 [MIT License](./LICENSE) 开源。
-
-```
-MIT License
-
-Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software...
-```
 
 
