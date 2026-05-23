@@ -6,7 +6,7 @@ class UpdateService {
   /// GitHub API URL for latest release.
   /// Replace YOUR_USERNAME with your actual GitHub username.
   static const String _releaseUrl =
-      'https://api.github.com/repos/YOUR_USERNAME/ai-hub/releases/latest';
+      'https://api.github.com/repos/XU-QiYi/ai-hub/releases/latest';
 
   /// Compare two semantic version strings (without "v" prefix).
   /// Returns true if [latest] is newer than [current].
