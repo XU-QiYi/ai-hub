@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../config/theme_config.dart';
 import '../models/ai_service.dart';
 
@@ -7,6 +8,14 @@ class ServiceCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const ServiceCard({super.key, required this.service, this.onTap});
+
+  Widget _buildIcon(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    if (ext == 'svg') {
+      return SvgPicture.asset(path, width: 40, height: 40);
+    }
+    return Image.asset(path, width: 40, height: 40, fit: BoxFit.contain);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +44,7 @@ class ServiceCard extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    service.icon,
-                    size: 36,
-                    color: primaryColor.withValues(alpha: 0.8),
-                  ),
+                  _buildIcon(service.iconPath),
                   const SizedBox(height: 8),
                   Text(
                     service.name,

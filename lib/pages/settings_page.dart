@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app.dart';
@@ -25,6 +26,14 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   static const _channel = MethodChannel('com.aihub.webview');
   bool _isCheckingUpdate = false;
+
+  Widget _buildIcon(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    if (ext == 'svg') {
+      return SvgPicture.asset(path, width: 24, height: 24);
+    }
+    return Image.asset(path, width: 24, height: 24, fit: BoxFit.contain);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +122,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 // ---- Services ----
                 _sectionHeader('收录服务', secondaryColor),
                 ...aiServices.map((service) => ListTile(
-                      leading: Icon(service.icon, color: secondaryColor),
+                      leading: _buildIcon(service.iconPath),
                       title: Text(service.name),
                       subtitle: Text(
                         '网页版: ${service.url}',
