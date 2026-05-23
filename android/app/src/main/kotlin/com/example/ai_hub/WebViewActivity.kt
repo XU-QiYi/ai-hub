@@ -1,14 +1,24 @@
 package com.example.ai_hub
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.Button
+import android.widget.TextView
+import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -16,6 +26,9 @@ import androidx.core.view.WindowInsetsCompat
 class WebViewActivity : android.app.Activity() {
 
     private lateinit var webView: WebView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var errorLayout: LinearLayout
+    private var currentUrl: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -23,6 +36,7 @@ class WebViewActivity : android.app.Activity() {
 
         val container = FrameLayout(this)
 
+        // WebView
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -47,6 +61,40 @@ class WebViewActivity : android.app.Activity() {
                     }
                     return true
                 }
+
+                override fun onReceivedError(
+                    view: WebView?,
+                    errorCode: Int,
+                    description: String?,
+                    failingUrl: String?
+                ) {
+                    showErrorLayout()
+                }
+
+                override fun onReceivedError(
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    error: WebResourceError?
+                ) {
+                    if (request?.isForMainFrame == true) {
+                        showErrorLayout()
+                    }
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    hideErrorLayout()
+                }
+            }
+
+            webChromeClient = object : android.webkit.WebChromeClient() {
+                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                    if (newProgress < 100) {
+                        progressBar.visibility = View.VISIBLE
+                        progressBar.progress = newProgress
+                    } else {
+                        progressBar.visibility = View.GONE
+                    }
+                }
             }
 
             settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -58,6 +106,80 @@ class WebViewActivity : android.app.Activity() {
             FrameLayout.LayoutParams.MATCH_PARENT
         ))
 
+        // 加载进度条 - 状态栏下方，2dp 高度
+        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = false
+            max = 100
+            progress = 0
+            visibility = View.GONE
+            val params = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(2)
+            )
+            params.gravity = Gravity.TOP
+            layoutParams = params
+            progressDrawable = ContextCompat.getDrawable(
+                this@WebViewActivity,
+                android.R.drawable.progress_horizontal
+            )?.apply {
+                setColorFilter(Color.parseColor("#2196F3"), android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+        }
+        container.addView(progressBar)
+
+        // 错误提示布局 - 居中显示
+        errorLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+            setBackgroundColor(Color.WHITE)
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+
+            addView(ImageView(this@WebViewActivity).apply {
+                setImageResource(android.R.drawable.ic_dialog_alert)
+                val size = dpToPx(64)
+                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+                setColorFilter(Color.parseColor("#9E9E9E"))
+            })
+
+            addView(TextView(this@WebViewActivity).apply {
+                text = "页面加载失败"
+                textSize = 16f
+                setTextColor(Color.parseColor("#757575"))
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dpToPx(16)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            })
+
+            addView(Button(this@WebViewActivity).apply {
+                text = "重试"
+                setOnClickListener {
+                    hideErrorLayout()
+                    if (currentUrl.isNotEmpty()) {
+                        webView.loadUrl(currentUrl)
+                    }
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dpToPx(16)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            })
+        }
+        container.addView(errorLayout)
+
         setContentView(container)
 
         // 处理顶部和底部安全区域（状态栏 + 导航栏）
@@ -68,10 +190,24 @@ class WebViewActivity : android.app.Activity() {
             WindowInsetsCompat.CONSUMED
         }
 
-        val url = intent.getStringExtra("url")
-        if (!url.isNullOrEmpty()) {
-            webView.loadUrl(url)
+        currentUrl = intent.getStringExtra("url") ?: ""
+        if (currentUrl.isNotEmpty()) {
+            webView.loadUrl(currentUrl)
         }
+    }
+
+    private fun showErrorLayout() {
+        errorLayout.visibility = View.VISIBLE
+        webView.visibility = View.INVISIBLE
+    }
+
+    private fun hideErrorLayout() {
+        errorLayout.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density + 0.5f).toInt()
     }
 
     override fun onBackPressed() {

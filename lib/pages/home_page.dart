@@ -13,16 +13,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   static const _channel = MethodChannel('com.aihub.webview');
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Map<String, int> _clickCounts = {};
   final StorageService _storageService = StorageService();
 
+  late AnimationController _cardAnimController;
+
   @override
   void initState() {
     super.initState();
+    _cardAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _cardAnimController.forward();
     _loadClickCounts();
   }
 
@@ -59,6 +67,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _cardAnimController.dispose();
     super.dispose();
   }
 
@@ -76,11 +85,12 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           'AI Hub',
           style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
             color: Theme.of(context).appBarTheme.foregroundColor,
           ),
         ),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -127,9 +137,23 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: filtered.isEmpty
                 ? Center(
-                    child: Text(
-                      '没有找到匹配的服务',
-                      style: TextStyle(color: secondaryColor, fontSize: 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: secondaryColor.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '没有找到匹配的服务',
+                          style: TextStyle(
+                            color: secondaryColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : GridView.builder(
@@ -145,38 +169,59 @@ class _HomePageState extends State<HomePage> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final service = filtered[index];
-                      return ServiceCard(
-                        service: service,
-                        onTap: () async {
-                          await _storageService.incrementClick(service.name);
-                          final newCounts =
-                              await _storageService.getAllClickCounts();
-                          setState(() {
-                            _clickCounts = newCounts;
-                          });
-                          try {
-                            if (service.packageName != null) {
-                              final installed = await _channel.invokeMethod(
-                                  'checkAppInstalled',
-                                  {'packageName': service.packageName});
-                              debugPrint(
-                                  '[AiHub] ${service.name} packageName=${service.packageName} installed=$installed');
-                              if (installed == true) {
-                                try {
-                                  await _channel.invokeMethod('launchApp',
-                                      {'packageName': service.packageName});
-                                  return;
-                                } on PlatformException catch (e) {
-                                  debugPrint('[AiHub] launchApp failed: ${e.message}');
+                      final delay = (index * 60).clamp(0, 400);
+                      final start = delay / 600.0;
+                      final end = ((delay + 300) / 600.0).clamp(0.0, 1.0);
+                      final interval =
+                          Interval(start, end, curve: Curves.easeOut);
+
+                      return AnimatedBuilder(
+                        animation: _cardAnimController,
+                        builder: (context, child) {
+                          final value =
+                              interval.transform(_cardAnimController.value);
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 20 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: ServiceCard(
+                          service: service,
+                          onTap: () async {
+                            await _storageService.incrementClick(service.name);
+                            final newCounts =
+                                await _storageService.getAllClickCounts();
+                            setState(() {
+                              _clickCounts = newCounts;
+                            });
+                            try {
+                              if (service.packageName != null) {
+                                final installed = await _channel.invokeMethod(
+                                    'checkAppInstalled',
+                                    {'packageName': service.packageName});
+                                debugPrint(
+                                    '[AiHub] ${service.name} packageName=${service.packageName} installed=$installed');
+                                if (installed == true) {
+                                  try {
+                                    await _channel.invokeMethod('launchApp',
+                                        {'packageName': service.packageName});
+                                    return;
+                                  } on PlatformException catch (e) {
+                                    debugPrint(
+                                        '[AiHub] launchApp failed: ${e.message}');
+                                  }
                                 }
                               }
+                              await _channel.invokeMethod(
+                                  'openUrl', {'url': service.url});
+                            } on PlatformException catch (e) {
+                              debugPrint('MethodChannel failed: ${e.message}');
                             }
-                            await _channel.invokeMethod(
-                                'openUrl', {'url': service.url});
-                          } on PlatformException catch (e) {
-                            debugPrint('MethodChannel failed: ${e.message}');
-                          }
-                        },
+                          },
+                        ),
                       );
                     },
                   ),
