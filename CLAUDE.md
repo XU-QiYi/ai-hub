@@ -162,3 +162,5 @@ flutter build apk
 - WebView 开发 → 查 AGENTS.md WebView 规范
 - 判断能否修改 → 查本文件 Important Constraints
 - 不确定放哪里 → 查本文件 Project Structure
+
+最后：每次输出前先plan给出方案，等待用户确认在执行。不要直接更改文件。
