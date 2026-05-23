@@ -104,7 +104,7 @@ ai_hub/
 ## 截图展示
 
 
-> 将截图放入 `screenshots/` 目录后取消下方注释即可展示
+> 将截图放入 `screenshots/` 目录后可展示
 
 <div style="text-align: center;">
 <table>
