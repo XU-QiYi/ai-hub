@@ -51,9 +51,11 @@
         <package android:name="com.tencent.hunyuan.app.chat" />
         <package android:name="com.zhipuai.qingyan" />
         <package android:name="com.aliyun.tongyi" />
+        <!--  豆包-->
         <package android:name="com.larus.nova" />
         <package android:name="com.ss.android.ugc.aweme.lite" />
         <package android:name="com.baidu.newapp" />
-        <package android:name="com.minimax.chat" />
+        <!-- minimax-->
+        <package android:name="com.xproducer.yingshiai" />
     </queries>
 </manifest>
