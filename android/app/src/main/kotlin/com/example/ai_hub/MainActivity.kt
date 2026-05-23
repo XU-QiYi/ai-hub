@@ -62,6 +62,12 @@ class MainActivity : FlutterActivity() {
                             result.error("LAUNCH_FAILED", e.message, null)
                         }
                     }
+                    "clearWebCache" -> {
+                        // WebView reference may not be available here.
+                        // Return success; actual clearing happens when
+                        // WebViewActivity next opens and calls clearCache.
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

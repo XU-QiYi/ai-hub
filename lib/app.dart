@@ -4,9 +4,33 @@ import 'config/theme_config.dart';
 import 'providers/theme_provider.dart';
 import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
+import 'services/update_service.dart';
 
-class MyApp extends StatelessWidget {
+/// App version, keep in sync with pubspec.yaml version field.
+const String appVersion = "1.0.1";
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Map<String, dynamic>? _availableUpdate;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUpdateOnStartup();
+  }
+
+  void _checkUpdateOnStartup() async {
+    final update = await UpdateService().checkForUpdate(appVersion);
+    if (mounted && update != null) {
+      setState(() => _availableUpdate = update);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +70,11 @@ class MyApp extends StatelessWidget {
           ),
           home: const HomePage(),
           routes: {
-            '/settings': (context) => const SettingsPage(),
+            '/settings': (context) => SettingsPage(
+                  initialUpdate: _availableUpdate,
+                  onClearUpdate: () =>
+                      setState(() => _availableUpdate = null),
+                ),
           },
         );
       },
