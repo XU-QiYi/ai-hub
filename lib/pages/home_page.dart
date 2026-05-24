@@ -6,6 +6,7 @@ import '../config/services_config.dart';
 import '../models/ai_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/service_card.dart';
+import '../widgets/app_background.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -101,7 +102,9 @@ class _HomePageState extends State<HomePage>
     final isSelected = _selectedTab == index;
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
-    final primaryColor = AppColors.primaryText(isDark: isDark);
+    final secondaryColor = AppColors.secondaryText(isDark: isDark);
+    // 选中态使用蓝色强调色，确保深色/浅色模式都清晰可见
+    const accentColor = Color(0xFF3B82F6);
 
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = index),
@@ -109,7 +112,7 @@ class _HomePageState extends State<HomePage>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.transparent,
+          color: isSelected ? accentColor : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -117,7 +120,7 @@ class _HomePageState extends State<HomePage>
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : primaryColor.withValues(alpha: 0.6),
+            color: isSelected ? Colors.white : secondaryColor,
           ),
         ),
       ),
@@ -153,8 +156,13 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          // 底层：背景渐变 + 柔光圆
+          Positioned.fill(child: AppBackground(isDark: isDark)),
+          // 上层：原有内容
+          Column(
+            children: [
           // ---- Tab 栏 ----
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -291,6 +299,8 @@ class _HomePageState extends State<HomePage>
                       );
                     },
                   ),
+          ),
+            ],
           ),
         ],
       ),

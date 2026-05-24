@@ -6,11 +6,11 @@ class AppColors {
   }
 
   static Color cardBackground({required bool isDark}) {
-    return isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+    return isDark ? const Color(0xB31E1E28) : const Color(0xA6FFFFFF);
   }
 
   static Color cardPressed({required bool isDark}) {
-    return isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE8E8E8);
+    return isDark ? const Color(0xCC2A2A35) : const Color(0xFFE8E8E8);
   }
 
   static Color primaryText({required bool isDark}) {

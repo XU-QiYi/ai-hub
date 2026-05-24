@@ -42,30 +42,30 @@ class _MyAppState extends State<MyApp> {
           themeMode: themeProvider.themeMode,
           theme: ThemeData(
             brightness: Brightness.light,
-            scaffoldBackgroundColor: AppColors.background(isDark: false),
-            appBarTheme: AppBarTheme(
-              backgroundColor: AppColors.background(isDark: false),
-              foregroundColor: AppColors.primaryText(isDark: false),
+            scaffoldBackgroundColor: const Color(0xFFF0F2F5),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFFF0F2F5),
+              foregroundColor: Color(0xFF1A1A1A),
               elevation: 0,
             ),
             cardColor: AppColors.cardBackground(isDark: false),
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primaryText(isDark: false),
-              surface: AppColors.background(isDark: false),
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A1A1A),
+              surface: Color(0xFFF0F2F5),
             ),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
-            scaffoldBackgroundColor: AppColors.background(isDark: true),
-            appBarTheme: AppBarTheme(
-              backgroundColor: AppColors.background(isDark: true),
-              foregroundColor: AppColors.primaryText(isDark: true),
+            scaffoldBackgroundColor: const Color(0xFF08090D),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF08090D),
+              foregroundColor: Color(0xFFFFFFFF),
               elevation: 0,
             ),
             cardColor: AppColors.cardBackground(isDark: true),
-            colorScheme: ColorScheme.dark(
-              primary: AppColors.primaryText(isDark: true),
-              surface: AppColors.background(isDark: true),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFFFFFFF),
+              surface: Color(0xFF08090D),
             ),
           ),
           home: const HomePage(),
