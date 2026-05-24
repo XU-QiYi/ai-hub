@@ -1,12 +1,16 @@
+import 'package:flutter/material.dart';
 import '../models/ai_service.dart';
 
 final List<AiService> aiServices = [
+  // ---- 国内 ----
   AiService(
     name: 'Kimi',
     url: 'https://kimi.moonshot.cn',
     description: '擅长长文本处理',
     iconPath: 'assets/icons/kimi.png',
     packageName: 'com.moonshot.kimichat',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '豆包',
@@ -14,6 +18,8 @@ final List<AiService> aiServices = [
     description: '字节跳动旗下全能助手',
     iconPath: 'assets/icons/doubao.png',
     packageName: 'com.larus.nova',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: 'DeepSeek',
@@ -21,6 +27,8 @@ final List<AiService> aiServices = [
     description: '推理能力出色',
     iconPath: 'assets/icons/deepseek.png',
     packageName: 'com.deepseek.chat',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '千问',
@@ -28,6 +36,8 @@ final List<AiService> aiServices = [
     description: '阿里通义系列核心产品',
     iconPath: 'assets/icons/tongyi.png',
     packageName: 'com.aliyun.tongyi',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '文心一言',
@@ -35,6 +45,8 @@ final List<AiService> aiServices = [
     description: '百度文心大模型产品',
     iconPath: 'assets/icons/wenxin.png',
     packageName: 'com.baidu.newapp',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '智谱清言',
@@ -42,6 +54,8 @@ final List<AiService> aiServices = [
     description: '清华 GLM 系列产品',
     iconPath: 'assets/icons/zhipu.png',
     packageName: 'com.zhipuai.qingyan',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '讯飞星火',
@@ -49,6 +63,8 @@ final List<AiService> aiServices = [
     description: '科大讯飞语音与语言模型',
     iconPath: 'assets/icons/xinghuo.png',
     packageName: null,
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '腾讯元宝',
@@ -56,6 +72,8 @@ final List<AiService> aiServices = [
     description: '腾讯混元对话产品',
     iconPath: 'assets/icons/yuanbao.png',
     packageName: 'com.tencent.hunyuan.app.chat',
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: 'Coze',
@@ -63,6 +81,8 @@ final List<AiService> aiServices = [
     description: '字节跳动 AI Bot 平台',
     iconPath: 'assets/icons/coze.png',
     packageName: null,
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: '腾讯混元',
@@ -70,6 +90,8 @@ final List<AiService> aiServices = [
     description: '腾讯自研大模型',
     iconPath: 'assets/icons/hunyuan.svg',
     packageName: null,
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: 'MiMo',
@@ -77,6 +99,8 @@ final List<AiService> aiServices = [
     description: '小米自研大模型',
     iconPath: 'assets/icons/mimo.svg',
     packageName: null,
+    region: 'domestic',
+    needVpn: false,
   ),
   AiService(
     name: 'Minimax',
@@ -84,5 +108,72 @@ final List<AiService> aiServices = [
     description: 'MiniMax 对话产品',
     iconPath: 'assets/icons/minimax.png',
     packageName: 'com.xproducer.yingshiai',
+    region: 'domestic',
+    needVpn: false,
+  ),
+
+  // ---- 国外 ----
+  AiService(
+    name: 'ChatGPT',
+    url: 'https://chat.openai.com',
+    description: 'OpenAI 旗舰对话产品',
+    icon: Icons.auto_awesome_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Claude',
+    url: 'https://claude.ai',
+    description: 'Anthropic 高智能助手',
+    icon: Icons.psychology_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Gemini',
+    url: 'https://gemini.google.com',
+    description: 'Google AI 助手',
+    icon: Icons.diamond_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Perplexity',
+    url: 'https://www.perplexity.ai',
+    description: 'AI 搜索引擎',
+    icon: Icons.travel_explore_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Copilot',
+    url: 'https://copilot.microsoft.com',
+    description: '微软 AI 助手',
+    icon: Icons.lightbulb_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Grok',
+    url: 'https://grok.com',
+    description: 'xAI 旗舰产品',
+    icon: Icons.bolt_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
+  ),
+  AiService(
+    name: 'Poe',
+    url: 'https://poe.com',
+    description: '多模型聚合平台',
+    icon: Icons.all_inclusive_outlined,
+    packageName: null,
+    region: 'overseas',
+    needVpn: true,
   ),
 ];

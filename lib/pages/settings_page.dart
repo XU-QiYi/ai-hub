@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app.dart';
 import '../config/theme_config.dart';
 import '../config/services_config.dart';
+import '../models/ai_service.dart';
 import '../providers/theme_provider.dart';
 import '../services/update_service.dart';
 
@@ -27,12 +28,38 @@ class _SettingsPageState extends State<SettingsPage> {
   static const _channel = MethodChannel('com.aihub.webview');
   bool _isCheckingUpdate = false;
 
-  Widget _buildIcon(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    if (ext == 'svg') {
-      return SvgPicture.asset(path, width: 24, height: 24);
+  Widget _buildIcon(String? path, IconData? iconData) {
+    if (path != null) {
+      final ext = path.split('.').last.toLowerCase();
+      if (ext == 'svg') {
+        return SvgPicture.asset(path, width: 24, height: 24);
+      }
+      return Image.asset(path, width: 24, height: 24, fit: BoxFit.contain);
     }
-    return Image.asset(path, width: 24, height: 24, fit: BoxFit.contain);
+    if (iconData != null) {
+      return Icon(iconData, size: 24);
+    }
+    return Icon(Icons.smart_toy_outlined, size: 24);
+  }
+
+  Widget _buildServiceTile(AiService service, Color secondaryColor) {
+    return ListTile(
+      leading: _buildIcon(service.iconPath, service.icon),
+      title: Text(service.name),
+      subtitle: Text(
+        '网页版: ${service.url}',
+        style: TextStyle(fontSize: 11, color: secondaryColor),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        service.packageName != null ? '客户端: 已配置' : '客户端: 未配置',
+        style: TextStyle(
+          fontSize: 11,
+          color: service.packageName != null ? Colors.green : Colors.grey,
+        ),
+      ),
+    );
   }
 
   @override
@@ -120,28 +147,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 const Divider(height: 1, indent: 16, endIndent: 16),
 
                 // ---- Services ----
-                _sectionHeader('收录服务', secondaryColor),
-                ...aiServices.map((service) => ListTile(
-                      leading: _buildIcon(service.iconPath),
-                      title: Text(service.name),
-                      subtitle: Text(
-                        '网页版: ${service.url}',
-                        style: TextStyle(fontSize: 11, color: secondaryColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Text(
-                        service.packageName != null
-                            ? '客户端: 已配置'
-                            : '客户端: 未配置',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: service.packageName != null
-                              ? Colors.green
-                              : Colors.grey,
-                        ),
-                      ),
-                    )),
+                _sectionHeader('收录服务 · 国内', secondaryColor),
+                ...aiServices
+                    .where((s) => s.region == 'domestic')
+                    .map((service) => _buildServiceTile(service, secondaryColor)),
+
+                const Divider(height: 1, indent: 16, endIndent: 16),
+
+                _sectionHeader('收录服务 · 国外', secondaryColor),
+                ...aiServices
+                    .where((s) => s.region == 'overseas')
+                    .map((service) => _buildServiceTile(service, secondaryColor)),
               ],
             ),
           );

@@ -7,7 +7,7 @@ import 'pages/settings_page.dart';
 import 'services/update_service.dart';
 
 /// App version, keep in sync with pubspec.yaml version field.
-const String appVersion = "1.0.1";
+const String appVersion = "1.1.0";
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

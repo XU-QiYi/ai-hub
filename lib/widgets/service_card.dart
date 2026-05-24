@@ -9,12 +9,18 @@ class ServiceCard extends StatelessWidget {
 
   const ServiceCard({super.key, required this.service, this.onTap});
 
-  Widget _buildIcon(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    if (ext == 'svg') {
-      return SvgPicture.asset(path, width: 40, height: 40);
+  Widget _buildIcon(String? path, IconData? iconData) {
+    if (path != null) {
+      final ext = path.split('.').last.toLowerCase();
+      if (ext == 'svg') {
+        return SvgPicture.asset(path, width: 40, height: 40);
+      }
+      return Image.asset(path, width: 40, height: 40, fit: BoxFit.contain);
     }
-    return Image.asset(path, width: 40, height: 40, fit: BoxFit.contain);
+    if (iconData != null) {
+      return Icon(iconData, size: 40);
+    }
+    return Icon(Icons.smart_toy_outlined, size: 40);
   }
 
   @override
@@ -37,36 +43,65 @@ class ServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           splashColor: primaryColor.withValues(alpha: 0.1),
           onTap: onTap,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildIcon(service.iconPath),
-                  const SizedBox(height: 8),
-                  Text(
-                    service.name,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildIcon(service.iconPath, service.icon),
+                      const SizedBox(height: 10),
+                      Text(
+                        service.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        service.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: secondaryColor,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    service.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: secondaryColor,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              if (service.needVpn)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'VPN',
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

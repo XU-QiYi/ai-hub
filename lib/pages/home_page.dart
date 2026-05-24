@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../config/theme_config.dart';
 import '../config/services_config.dart';
 import '../models/ai_service.dart';
@@ -19,7 +20,10 @@ class _HomePageState extends State<HomePage>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Map<String, int> _clickCounts = {};
-  final StorageService _storageService = StorageService();
+  int _selectedTab = 0; // 0=全部, 1=国内, 2=国外
+
+  StorageService get _storageService =>
+      Provider.of<StorageService>(context, listen: false);
 
   late AnimationController _cardAnimController;
 
@@ -36,29 +40,51 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _loadClickCounts() async {
     final counts = await _storageService.getAllClickCounts();
+    debugPrint('[AiHub] _clickCounts loaded: $counts');
     setState(() {
       _clickCounts = counts;
     });
   }
 
   List<AiService> get _sortedServices {
-    final services = List<AiService>.from(aiServices);
-    services.sort((a, b) {
+    // 按区域分组后分别排序，再合并
+    final domestic = <AiService>[];
+    final overseas = <AiService>[];
+    for (final s in aiServices) {
+      if (s.region == 'domestic') {
+        domestic.add(s);
+      } else {
+        overseas.add(s);
+      }
+    }
+
+    int compareByClick(List<AiService> list, AiService a, AiService b) {
       final aCount = _clickCounts[a.name] ?? 0;
       final bCount = _clickCounts[b.name] ?? 0;
       if (aCount > 0 && bCount > 0) return bCount.compareTo(aCount);
       if (aCount > 0) return -1;
       if (bCount > 0) return 1;
-      return 0;
-    });
-    return services;
+      return list.indexOf(a).compareTo(list.indexOf(b));
+    }
+
+    domestic.sort((a, b) => compareByClick(domestic, a, b));
+    overseas.sort((a, b) => compareByClick(overseas, a, b));
+
+    return [...domestic, ...overseas];
   }
 
   List<AiService> get _filteredServices {
-    final sorted = _sortedServices;
-    if (_searchQuery.isEmpty) return sorted;
+    var result = _sortedServices;
+    // Tab 筛选
+    if (_selectedTab == 1) {
+      result = result.where((s) => s.region == 'domestic').toList();
+    } else if (_selectedTab == 2) {
+      result = result.where((s) => s.region == 'overseas').toList();
+    }
+    // 搜索二次过滤
+    if (_searchQuery.isEmpty) return result;
     final query = _searchQuery.toLowerCase();
-    return sorted.where((s) {
+    return result.where((s) {
       return s.name.toLowerCase().contains(query) ||
           s.description.toLowerCase().contains(query);
     }).toList();
@@ -69,6 +95,33 @@ class _HomePageState extends State<HomePage>
     _searchController.dispose();
     _cardAnimController.dispose();
     super.dispose();
+  }
+
+  Widget _buildTabButton(String label, int index) {
+    final isSelected = _selectedTab == index;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryText(isDark: isDark);
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : primaryColor.withValues(alpha: 0.6),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -102,8 +155,21 @@ class _HomePageState extends State<HomePage>
       ),
       body: Column(
         children: [
+          // ---- Tab 栏 ----
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _buildTabButton('全部', 0),
+                const SizedBox(width: 8),
+                _buildTabButton('国内', 1),
+                const SizedBox(width: 8),
+                _buildTabButton('海外', 2),
+              ],
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
@@ -164,7 +230,7 @@ class _HomePageState extends State<HomePage>
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 1.3,
+                      childAspectRatio: 1.1,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
