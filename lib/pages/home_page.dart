@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../config/theme_config.dart';
@@ -15,10 +16,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   static const _channel = MethodChannel('com.aihub.webview');
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   Map<String, int> _clickCounts = {};
   int _selectedTab = 0; // 0=全部, 1=国内, 2=国外
@@ -26,16 +27,9 @@ class _HomePageState extends State<HomePage>
   StorageService get _storageService =>
       Provider.of<StorageService>(context, listen: false);
 
-  late AnimationController _cardAnimController;
-
   @override
   void initState() {
     super.initState();
-    _cardAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _cardAnimController.forward();
     _loadClickCounts();
   }
 
@@ -94,7 +88,7 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _searchController.dispose();
-    _cardAnimController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -231,6 +225,7 @@ class _HomePageState extends State<HomePage>
                     ),
                   )
                 : GridView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 8),
                     gridDelegate:
@@ -243,25 +238,10 @@ class _HomePageState extends State<HomePage>
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final service = filtered[index];
-                      final delay = (index * 60).clamp(0, 400);
-                      final start = delay / 600.0;
-                      final end = ((delay + 300) / 600.0).clamp(0.0, 1.0);
-                      final interval =
-                          Interval(start, end, curve: Curves.easeOut);
-
-                      return AnimatedBuilder(
-                        animation: _cardAnimController,
-                        builder: (context, child) {
-                          final value =
-                              interval.transform(_cardAnimController.value);
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 20 * (1 - value)),
-                              child: child,
-                            ),
-                          );
-                        },
+                      return _AnimatedCard(
+                        key: ValueKey(service.name),
+                        index: index,
+                        scrollController: _scrollController,
                         child: ServiceCard(
                           service: service,
                           onTap: () async {
@@ -303,6 +283,115 @@ class _HomePageState extends State<HomePage>
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 滚动入场动画包装：卡片首次进入可视区域时播放淡入 + 上滑动画
+class _AnimatedCard extends StatefulWidget {
+  final int index;
+  final ScrollController scrollController;
+  final Widget child;
+
+  const _AnimatedCard({
+    super.key,
+    required this.index,
+    required this.scrollController,
+    required this.child,
+  });
+
+  @override
+  State<_AnimatedCard> createState() => _AnimatedCardState();
+}
+
+class _AnimatedCardState extends State<_AnimatedCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnim;
+  late final Animation<Offset> _slideAnim;
+  final GlobalKey _cardKey = GlobalKey();
+  bool _animated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _opacityAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    // 持续检测可见性，直到首次触发动画（解决首帧 renderObject 未就绪问题）
+    SchedulerBinding.instance.addPersistentFrameCallback((_) {
+      if (_animated || !mounted) return;
+      _checkVisibility();
+    });
+    // 同时注册滚动监听，用于滚动停止后检查
+    widget.scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_animated || !mounted) return;
+    // 仅在滚动停止时检查（通过 addPostFrameCallback 实现轻量节流）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _animated) return;
+      _checkVisibility();
+    });
+  }
+
+  void _checkVisibility() {
+    if (_animated || !mounted) return;
+    final renderObject = _cardKey.currentContext?.findRenderObject();
+    if (renderObject == null || !renderObject.attached) return;
+
+    final box = renderObject as RenderBox;
+    final cardPosition = box.localToGlobal(Offset.zero);
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // 卡片顶部进入屏幕可见区域即触发动画
+    if (cardPosition.dy < screenHeight) {
+      _triggerAnimation();
+    }
+  }
+
+  void _triggerAnimation() {
+    if (_animated || !mounted) return;
+    _animated = true;
+    widget.scrollController.removeListener(_onScroll);
+    // 按 index 错开动画起始时间
+    Future.delayed(Duration(milliseconds: widget.index * 80), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_onScroll);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _opacityAnim.value,
+          child: FractionalTranslation(
+            translation: _slideAnim.value,
+            child: child,
+          ),
+        );
+      },
+      child: SizedBox(
+        key: _cardKey,
+        child: widget.child,
       ),
     );
   }
