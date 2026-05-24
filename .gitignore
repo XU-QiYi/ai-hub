@@ -114,4 +114,10 @@ app.*.map.json
 *.freezed.dart
 *.mocks.dart
 
+# Build output
+app-release/
+
+# DevTools
+devtools_options.yaml
+
 .metadata
