@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../config/theme_config.dart';
 import '../config/services_config.dart';
@@ -23,6 +24,10 @@ class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
   Map<String, int> _clickCounts = {};
   int _selectedTab = 0; // 0=全部, 1=国内, 2=国外
+  bool _viewModeCard = false; // false=网格, true=卡片
+  final PageController _pageController =
+      PageController(viewportFraction: 0.78);
+  int _currentPage = 0;
 
   StorageService get _storageService =>
       Provider.of<StorageService>(context, listen: false);
@@ -89,6 +94,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -101,7 +107,15 @@ class _HomePageState extends State<HomePage> {
     const accentColor = Color(0xFF3B82F6);
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedTab = index),
+      onTap: () {
+        setState(() {
+          _selectedTab = index;
+          _currentPage = 0;
+        });
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -119,6 +133,255 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  // ---- 卡片堆叠视图 ----
+
+  Widget _buildCardView(List<AiService> services, bool isDark) {
+    if (services.isEmpty) {
+      return Center(
+        child: Text(
+          '没有找到匹配的服务',
+          style: TextStyle(
+            color: AppColors.secondaryText(isDark: isDark),
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // 自适应尺寸：根据屏幕宽度分级
+    double widthFactor;
+    double heightFactor;
+    if (screenWidth < 360) {
+      widthFactor = 0.80;
+      heightFactor = 0.50;
+    } else if (screenWidth > 420) {
+      widthFactor = 0.65;
+      heightFactor = 0.40;
+    } else {
+      widthFactor = 0.78;
+      heightFactor = 0.45;
+    }
+    final cardWidth = screenWidth * widthFactor;
+    final cardHeight = screenHeight * heightFactor;
+
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: services.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              final service = services[index];
+              final value = (_pageController.page ?? _currentPage.toDouble()) -
+                  index;
+              final scale = (1.0 - value.abs() * 0.07).clamp(0.85, 1.0);
+              final translateX = value * cardWidth * 0.15;
+              final translateY = value.abs() * -10;
+              final opacity =
+                  (1.0 - value.abs() * 0.3).clamp(0.0, 1.0);
+
+              return Transform.translate(
+                offset: Offset(translateX, translateY),
+                child: Transform.scale(
+                  scale: scale,
+                  child: Opacity(
+                    opacity: opacity,
+                    child: GestureDetector(
+                      onTap: () => _openService(service),
+                      child: Container(
+                        width: cardWidth,
+                        height: cardHeight,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: _getGradientColors(service, isDark),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // 主内容
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // 图标 + 名称
+                                  Row(
+                                    children: [
+                                      _buildCardIcon(service),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        service.name,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // 描述
+                                  Text(
+                                    service.description,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  // 打开按钮
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.2),
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                      ),
+                                      child: const Text(
+                                        '打开 →',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // VPN 角标
+                            if (service.needVpn)
+                              Positioned(
+                                top: 16,
+                                right: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF6B35),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'VPN',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Color> _getGradientColors(AiService service, bool isDark) {
+    final map = <String, List<Color>>{
+      'Kimi': [
+        const Color(0xFF1a1a3e),
+        const Color(0xFF2d1b69),
+      ],
+      'DeepSeek': [
+        const Color(0xFF0c1a3a),
+        const Color(0xFF1a3a5c),
+      ],
+      '豆包': [
+        const Color(0xFF1a2a1a),
+        const Color(0xFF2a4a2a),
+      ],
+      '通义千问': [
+        const Color(0xFF3a1a1a),
+        const Color(0xFF5c2a1a),
+      ],
+      'ChatGPT': [
+        const Color(0xFF1a1a1a),
+        const Color(0xFF3a3a3a),
+      ],
+      'Claude': [
+        const Color(0xFF2a1a1a),
+        const Color(0xFF4a2a1a),
+      ],
+      'Gemini': [
+        const Color(0xFF1a2a2a),
+        const Color(0xFF2a4a4a),
+      ],
+    };
+    return map[service.name] ??
+        [
+          isDark ? const Color(0xFF2a2a3a) : const Color(0xFF4a4a5a),
+          isDark ? const Color(0xFF1a1a2a) : const Color(0xFF3a3a4a),
+        ];
+  }
+
+  Widget _buildCardIcon(AiService service) {
+    if (service.iconPath != null) {
+      final path = service.iconPath!;
+      final ext = path.split('.').last.toLowerCase();
+      if (ext == 'svg') {
+        return SvgPicture.asset(path, width: 48, height: 48);
+      }
+      return Image.asset(path, width: 48, height: 48, fit: BoxFit.contain);
+    }
+    return Icon(service.icon ?? Icons.smart_toy_outlined,
+        size: 48, color: Colors.white);
+  }
+
+  Future<void> _openService(AiService service) async {
+    await _storageService.incrementClick(service.name);
+    final newCounts = await _storageService.getAllClickCounts();
+    setState(() => _clickCounts = newCounts);
+    try {
+      if (service.packageName != null) {
+        final installed = await _channel.invokeMethod(
+            'checkAppInstalled', {'packageName': service.packageName});
+        if (installed == true) {
+          try {
+            await _channel.invokeMethod(
+                'launchApp', {'packageName': service.packageName});
+            return;
+          } on PlatformException catch (e) {
+            debugPrint('[AiHub] launchApp failed: ${e.message}');
+          }
+        }
+      }
+      await _channel.invokeMethod('openUrl', {'url': service.url});
+    } on PlatformException catch (e) {
+      debugPrint('[AiHub] MethodChannel failed: ${e.message}');
+    }
   }
 
   @override
@@ -141,6 +404,22 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _viewModeCard ? Icons.grid_view : Icons.view_carousel_outlined,
+            ),
+            onPressed: () {
+              setState(() {
+                _viewModeCard = !_viewModeCard;
+                _currentPage = 0;
+              });
+              if (_pageController.hasClients) {
+                _pageController.jumpToPage(0);
+              }
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -195,7 +474,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Expanded(
-            child: filtered.isEmpty
+            child: _viewModeCard
+                ? _buildCardView(filtered, isDark)
+                : filtered.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -236,37 +517,7 @@ class _HomePageState extends State<HomePage> {
                         scrollController: _scrollController,
                         child: ServiceCard(
                           service: service,
-                          onTap: () async {
-                            await _storageService.incrementClick(service.name);
-                            final newCounts =
-                                await _storageService.getAllClickCounts();
-                            setState(() {
-                              _clickCounts = newCounts;
-                            });
-                            try {
-                              if (service.packageName != null) {
-                                final installed = await _channel.invokeMethod(
-                                    'checkAppInstalled',
-                                    {'packageName': service.packageName});
-                                debugPrint(
-                                    '[AiHub] ${service.name} packageName=${service.packageName} installed=$installed');
-                                if (installed == true) {
-                                  try {
-                                    await _channel.invokeMethod('launchApp',
-                                        {'packageName': service.packageName});
-                                    return;
-                                  } on PlatformException catch (e) {
-                                    debugPrint(
-                                        '[AiHub] launchApp failed: ${e.message}');
-                                  }
-                                }
-                              }
-                              await _channel.invokeMethod(
-                                  'openUrl', {'url': service.url});
-                            } on PlatformException catch (e) {
-                              debugPrint('MethodChannel failed: ${e.message}');
-                            }
-                          },
+                          onTap: () => _openService(service),
                         ),
                       );
                     },

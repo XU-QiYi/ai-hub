@@ -3,20 +3,6 @@ import '../config/theme_config.dart';
 import 'home_page.dart';
 import 'settings_page.dart';
 
-class CardPage extends StatelessWidget {
-  const CardPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('卡片')),
-      body: const Center(
-        child: Text('卡片浏览'),
-      ),
-    );
-  }
-}
-
 class MainShell extends StatefulWidget {
   final Map<String, dynamic>? initialUpdate;
   final VoidCallback? onClearUpdate;
@@ -41,7 +27,6 @@ class _MainShellState extends State<MainShell> {
 
     final pages = [
       const HomePage(),
-      const CardPage(),
       SettingsPage(
         initialUpdate: widget.initialUpdate,
         onClearUpdate: widget.onClearUpdate,
@@ -67,11 +52,6 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: '主页',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: '卡片',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
