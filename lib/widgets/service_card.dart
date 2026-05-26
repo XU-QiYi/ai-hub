@@ -59,7 +59,7 @@ class ServiceCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildIcon(service.iconPath, service.icon),
+                      _buildIcon(service.iconPath, service.resolvedIcon),
                       const SizedBox(height: 10),
                       Text(
                         service.name,
@@ -101,6 +101,26 @@ class ServiceCard extends StatelessWidget {
                       'VPN',
                       style: TextStyle(
                         fontSize: 8,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              if (service.isCustom)
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      '自定义',
+                      style: TextStyle(
+                        fontSize: 9,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),

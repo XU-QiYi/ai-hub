@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:ai_hub/app.dart';
 import 'package:ai_hub/config/theme_config.dart';
+import 'package:ai_hub/pages/add_platform_page.dart';
+import 'package:ai_hub/pages/sort_hide_page.dart';
 import 'package:ai_hub/providers/theme_provider.dart';
 
 class SettingsPage extends StatelessWidget {
   static const _channel = MethodChannel('com.aihub.webview');
+  final VoidCallback? onRefreshHome;
 
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.onRefreshHome});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +51,7 @@ class SettingsPage extends StatelessWidget {
                   title: '语言',
                   subtitle: '简体中文',
                   secondaryColor: secondaryColor,
-                  onTap: () => print('language settings'),
+                  onTap: () => debugPrint('language settings'),
                 ),
                 _buildTile(
                   icon: Icons.dark_mode,
@@ -67,13 +70,27 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.add_circle_outline,
                   iconColor: Colors.green,
                   title: '添加自定义平台',
-                  onTap: () => print('add custom platform'),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AddPlatformPage()),
+                    );
+                    onRefreshHome?.call();
+                  },
                 ),
                 _buildTile(
                   icon: Icons.sort,
                   iconColor: Colors.blue,
                   title: '排序/隐藏平台',
-                  onTap: () => print('sort/hide platforms'),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const SortHidePage()),
+                    );
+                    onRefreshHome?.call();
+                  },
                 ),
 
                 const Divider(height: 1, indent: 16, endIndent: 16),
@@ -97,7 +114,7 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.notifications_outlined,
                   iconColor: Colors.yellow[700]!,
                   title: '通知设置',
-                  onTap: () => print('notification settings'),
+                  onTap: () => debugPrint('notification settings'),
                 ),
                 _buildTile(
                   icon: Icons.info_outline,

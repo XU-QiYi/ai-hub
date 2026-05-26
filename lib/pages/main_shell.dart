@@ -19,6 +19,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  final _homePageKey = GlobalKey<HomePageState>();
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +27,8 @@ class _MainShellState extends State<MainShell> {
     final isDark = brightness == Brightness.dark;
 
     final pages = [
-      const HomePage(),
-      SettingsPage(),
+      HomePage(key: _homePageKey),
+      SettingsPage(onRefreshHome: () => _homePageKey.currentState?.refreshServices()),
     ];
 
     return Scaffold(

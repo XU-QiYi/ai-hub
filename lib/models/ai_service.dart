@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/icons_config.dart';
 
 class AiService {
   final String name;
@@ -9,6 +10,8 @@ class AiService {
   final String? packageName;
   final String region;        // "domestic" 或 "overseas"
   final bool needVpn;         // 是否需要梯子
+  final bool isCustom;        // 是否为用户自定义服务
+  final String? iconName;     // 自定义图标的名称
 
   const AiService({
     required this.name,
@@ -19,5 +22,15 @@ class AiService {
     this.packageName,
     required this.region,
     this.needVpn = false,
+    this.isCustom = false,
+    this.iconName,
   });
+
+  IconData? get resolvedIcon {
+    if (icon != null) return icon;
+    if (iconName != null) {
+      return presetIconMap[iconName];
+    }
+    return null;
+  }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/week_utils.dart';
 
@@ -43,5 +44,43 @@ class StorageService {
   /// Clear all SharedPreferences data.
   Future<void> clearAllData() async {
     await _prefs?.clear();
+  }
+
+  /// Get the list of hidden service names.
+  Future<List<String>> getHiddenServices() async {
+    final result = _prefs?.getStringList('hidden_services') ?? [];
+    print('[AiHub] StorageService getHiddenServices: $result');
+    return result;
+  }
+
+  /// Set the list of hidden service names.
+  Future<void> setHiddenServices(List<String> services) async {
+    print('[AiHub] StorageService setHiddenServices: $services');
+    await _prefs?.setStringList('hidden_services', services);
+    // 验证保存是否成功
+    final saved = _prefs?.getStringList('hidden_services') ?? [];
+    print('[AiHub] StorageService setHiddenServices verify: $saved');
+  }
+
+  /// Get custom order of service names (null if not set).
+  Future<List<String>?> getCustomOrder() async {
+    return _prefs?.getStringList('custom_order');
+  }
+
+  /// Set custom order of service names.
+  Future<void> setCustomOrder(List<String> order) async {
+    await _prefs?.setStringList('custom_order', order);
+  }
+
+  /// Get custom platforms list.
+  Future<List<Map<String, dynamic>>> getCustomPlatforms() async {
+    final jsonList = _prefs?.getStringList('custom_platforms') ?? [];
+    return jsonList.map((json) => jsonDecode(json) as Map<String, dynamic>).toList();
+  }
+
+  /// Save custom platforms list.
+  Future<void> saveCustomPlatforms(List<Map<String, dynamic>> platforms) async {
+    final jsonList = platforms.map((p) => jsonEncode(p)).toList();
+    await _prefs?.setStringList('custom_platforms', jsonList);
   }
 }

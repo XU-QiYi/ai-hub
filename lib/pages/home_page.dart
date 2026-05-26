@@ -14,10 +14,10 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   static const _channel = MethodChannel('com.aihub.webview');
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -29,13 +29,37 @@ class _HomePageState extends State<HomePage> {
       PageController(viewportFraction: 0.78);
   int _currentPage = 0;
 
+  bool _isLoading = true;
+  bool _initialized = false;
+
+  // 隐藏服务和自定义排序
+  Set<String> _hiddenNames = {};
+  List<String>? _customOrder;
+  List<AiService> _customServices = [];
+
   StorageService get _storageService =>
       Provider.of<StorageService>(context, listen: false);
 
   @override
   void initState() {
     super.initState();
-    _loadClickCounts();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      _initData();
+    }
+  }
+
+  Future<void> _initData() async {
+    setState(() => _isLoading = true);
+    await _loadClickCounts();
+    await _loadHiddenAndOrder();
+    await _loadCustomPlatforms();
+    setState(() => _isLoading = false);
   }
 
   Future<void> _loadClickCounts() async {
@@ -46,31 +70,101 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _loadHiddenAndOrder() async {
+    final hiddenList = await _storageService.getHiddenServices();
+    final order = await _storageService.getCustomOrder();
+    setState(() {
+      _hiddenNames = hiddenList.toSet();
+      _customOrder = order;
+    });
+  }
+
+  /// 刷新服务列表（从排序页面返回时调用）
+  Future<void> refreshServices() async {
+    debugPrint('[AiHub] refreshServices called');
+    await _loadHiddenAndOrder();
+    await _loadClickCounts();
+    await _loadCustomPlatforms();
+    debugPrint('[AiHub] refreshServices done, _customServices: ${_customServices.length}');
+  }
+
+  Future<void> _loadCustomPlatforms() async {
+    try {
+      final platforms = await _storageService.getCustomPlatforms();
+      debugPrint('[AiHub] _loadCustomPlatforms raw: $platforms');
+      final customServices = platforms.map((p) {
+        debugPrint('[AiHub] _loadCustomPlatforms platform: $p');
+        return AiService(
+          name: p['name'] as String,
+          url: p['url'] as String,
+          description: (p['description'] as String?) ?? '',
+          iconName: (p['iconName'] as String?) ?? 'smart_toy_outlined',
+          region: (p['region'] as String?) ?? 'domestic',
+          isCustom: true,
+        );
+      }).toList();
+      debugPrint('[AiHub] _loadCustomPlatforms parsed: ${customServices.length}');
+      setState(() {
+        _customServices = customServices;
+      });
+      debugPrint('[AiHub] _customServices after setState: ${_customServices.length}');
+    } catch (e) {
+      debugPrint('[AiHub] _loadCustomPlatforms error: $e');
+    }
+  }
+
   List<AiService> get _sortedServices {
-    // 按区域分组后分别排序，再合并
-    final domestic = <AiService>[];
-    final overseas = <AiService>[];
-    for (final s in aiServices) {
-      if (s.region == 'domestic') {
-        domestic.add(s);
-      } else {
-        overseas.add(s);
+    // 合并内置服务和自定义服务
+    final allServices = [...aiServices, ..._customServices];
+    debugPrint('[AiHub] _sortedServices allServices count: ${allServices.length}');
+    debugPrint('[AiHub] _customServices names: ${_customServices.map((s) => s.name).toList()}');
+
+    // 过滤隐藏的服务
+    var services = allServices
+        .where((s) => !_hiddenNames.contains(s.name))
+        .toList();
+    debugPrint('[AiHub] _sortedServices after filter: ${services.length}, hiddenNames: $_hiddenNames');
+
+    // 如果有自定义排序，按自定义顺序排列
+    if (_customOrder != null && _customOrder!.isNotEmpty) {
+      final orderMap = <String, int>{};
+      for (int i = 0; i < _customOrder!.length; i++) {
+        orderMap[_customOrder![i]] = i;
       }
+      services.sort((a, b) {
+        final aIndex = orderMap[a.name] ?? 999;
+        final bIndex = orderMap[b.name] ?? 999;
+        return aIndex.compareTo(bIndex);
+      });
+    } else {
+      // 按点击量排序
+      final domestic = <AiService>[];
+      final overseas = <AiService>[];
+      for (final s in services) {
+        if (s.region == 'domestic') {
+          domestic.add(s);
+        } else {
+          overseas.add(s);
+        }
+      }
+
+      int compareByClick(List<AiService> list, AiService a, AiService b) {
+        final aCount = _clickCounts[a.name] ?? 0;
+        final bCount = _clickCounts[b.name] ?? 0;
+        if (aCount > 0 && bCount > 0) return bCount.compareTo(aCount);
+        if (aCount > 0) return -1;
+        if (bCount > 0) return 1;
+        return list.indexOf(a).compareTo(list.indexOf(b));
+      }
+
+      domestic.sort((a, b) => compareByClick(domestic, a, b));
+      overseas.sort((a, b) => compareByClick(overseas, a, b));
+      services = [...domestic, ...overseas];
     }
 
-    int compareByClick(List<AiService> list, AiService a, AiService b) {
-      final aCount = _clickCounts[a.name] ?? 0;
-      final bCount = _clickCounts[b.name] ?? 0;
-      if (aCount > 0 && bCount > 0) return bCount.compareTo(aCount);
-      if (aCount > 0) return -1;
-      if (bCount > 0) return 1;
-      return list.indexOf(a).compareTo(list.indexOf(b));
-    }
-
-    domestic.sort((a, b) => compareByClick(domestic, a, b));
-    overseas.sort((a, b) => compareByClick(overseas, a, b));
-
-    return [...domestic, ...overseas];
+    debugPrint('[AiHub] _sortedServices final count: ${services.length}');
+    debugPrint('[AiHub] _sortedServices final names: ${services.map((s) => s.name).toList()}');
+    return services;
   }
 
   List<AiService> get _filteredServices {
@@ -82,12 +176,17 @@ class _HomePageState extends State<HomePage> {
       result = result.where((s) => s.region == 'overseas').toList();
     }
     // 搜索二次过滤
-    if (_searchQuery.isEmpty) return result;
+    if (_searchQuery.isEmpty) {
+      debugPrint('[AiHub] _filteredServices final: ${result.length}');
+      return result;
+    }
     final query = _searchQuery.toLowerCase();
-    return result.where((s) {
+    final filtered = result.where((s) {
       return s.name.toLowerCase().contains(query) ||
           s.description.toLowerCase().contains(query);
     }).toList();
+    debugPrint('[AiHub] _filteredServices with search: ${filtered.length}');
+    return filtered;
   }
 
   @override
@@ -356,8 +455,11 @@ class _HomePageState extends State<HomePage> {
       }
       return Image.asset(path, width: 48, height: 48, fit: BoxFit.contain);
     }
-    return Icon(service.icon ?? Icons.smart_toy_outlined,
-        size: 48, color: Colors.white);
+    final icon = service.resolvedIcon;
+    if (icon != null) {
+      return Icon(icon, size: 48, color: Colors.white);
+    }
+    return Icon(Icons.smart_toy_outlined, size: 48, color: Colors.white);
   }
 
   Future<void> _openService(AiService service) async {
@@ -386,6 +488,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final secondaryColor = AppColors.secondaryText(isDark: isDark);
