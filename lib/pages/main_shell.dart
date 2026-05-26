@@ -27,10 +27,7 @@ class _MainShellState extends State<MainShell> {
 
     final pages = [
       const HomePage(),
-      SettingsPage(
-        initialUpdate: widget.initialUpdate,
-        onClearUpdate: widget.onClearUpdate,
-      ),
+      SettingsPage(),
     ];
 
     return Scaffold(

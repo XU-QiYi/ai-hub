@@ -1,73 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../app.dart';
-import '../config/theme_config.dart';
-import '../config/services_config.dart';
-import '../models/ai_service.dart';
-import '../providers/theme_provider.dart';
-import '../services/update_service.dart';
+import 'package:ai_hub/app.dart';
+import 'package:ai_hub/config/theme_config.dart';
+import 'package:ai_hub/providers/theme_provider.dart';
 
-class SettingsPage extends StatefulWidget {
-  final Map<String, dynamic>? initialUpdate;
-  final VoidCallback? onClearUpdate;
-
-  const SettingsPage({
-    super.key,
-    this.initialUpdate,
-    this.onClearUpdate,
-  });
-
-  @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
+class SettingsPage extends StatelessWidget {
   static const _channel = MethodChannel('com.aihub.webview');
-  bool _isCheckingUpdate = false;
 
-  Widget _buildIcon(String? path, IconData? iconData) {
-    if (path != null) {
-      final ext = path.split('.').last.toLowerCase();
-      if (ext == 'svg') {
-        return SvgPicture.asset(path, width: 24, height: 24);
-      }
-      return Image.asset(path, width: 24, height: 24, fit: BoxFit.contain);
-    }
-    if (iconData != null) {
-      return Icon(iconData, size: 24);
-    }
-    return Icon(Icons.smart_toy_outlined, size: 24);
-  }
-
-  Widget _buildServiceTile(AiService service, Color secondaryColor) {
-    return ListTile(
-      leading: _buildIcon(service.iconPath, service.icon),
-      title: Text(service.name),
-      subtitle: Text(
-        '网页版: ${service.url}',
-        style: TextStyle(fontSize: 11, color: secondaryColor),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Text(
-        service.packageName != null ? '客户端: 已配置' : '客户端: 未配置',
-        style: TextStyle(
-          fontSize: 11,
-          color: service.packageName != null ? Colors.green : Colors.grey,
-        ),
-      ),
-    );
-  }
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final secondaryColor = AppColors.secondaryText(isDark: isDark);
-    final primaryTextColor = AppColors.primaryText(isDark: isDark);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,91 +23,92 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
+          String themeModeText;
+          switch (themeProvider.themeMode) {
+            case ThemeMode.dark:
+              themeModeText = '深色';
+              break;
+            case ThemeMode.light:
+              themeModeText = '浅色';
+              break;
+            case ThemeMode.system:
+              themeModeText = '跟随系统';
+              break;
+          }
+
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ---- Theme ----
-                _sectionHeader('主题', secondaryColor),
-                RadioGroup<ThemeMode>(
-                  groupValue: themeProvider.themeMode,
-                  onChanged: (value) {
-                    if (value != null) themeProvider.setThemeMode(value);
-                  },
-                  child: Column(
-                    children: [
-                      RadioListTile<ThemeMode>(
-                        title: const Text('深色'),
-                        value: ThemeMode.dark,
-                        activeColor: primaryTextColor,
-                      ),
-                      RadioListTile<ThemeMode>(
-                        title: const Text('浅色'),
-                        value: ThemeMode.light,
-                        activeColor: primaryTextColor,
-                      ),
-                      RadioListTile<ThemeMode>(
-                        title: const Text('跟随系统'),
-                        value: ThemeMode.system,
-                        activeColor: primaryTextColor,
-                      ),
-                    ],
-                  ),
+                // ---- 常规 ----
+                _sectionHeader('常规', secondaryColor),
+                _buildTile(
+                  icon: Icons.language,
+                  iconColor: Colors.blue,
+                  title: '语言',
+                  subtitle: '简体中文',
+                  secondaryColor: secondaryColor,
+                  onTap: () => print('language settings'),
+                ),
+                _buildTile(
+                  icon: Icons.dark_mode,
+                  iconColor: Colors.orange,
+                  title: '深色模式',
+                  subtitle: themeModeText,
+                  secondaryColor: secondaryColor,
+                  onTap: () => _showThemeDialog(context, themeProvider),
                 ),
 
                 const Divider(height: 1, indent: 16, endIndent: 16),
 
-                // ---- About ----
-                _sectionHeader('关于', secondaryColor),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('当前版本'),
-                  trailing: Text(
-                    'v$appVersion',
-                    style: TextStyle(color: secondaryColor),
-                  ),
+                // ---- 平台管理 ----
+                _sectionHeader('平台管理', secondaryColor),
+                _buildTile(
+                  icon: Icons.add_circle_outline,
+                  iconColor: Colors.green,
+                  title: '添加自定义平台',
+                  onTap: () => print('add custom platform'),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.system_update),
-                  title: const Text('检查更新'),
-                  trailing: _isCheckingUpdate
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
-                  onTap: _isCheckingUpdate ? null : _handleCheckUpdate,
+                _buildTile(
+                  icon: Icons.sort,
+                  iconColor: Colors.blue,
+                  title: '排序/隐藏平台',
+                  onTap: () => print('sort/hide platforms'),
                 ),
 
                 const Divider(height: 1, indent: 16, endIndent: 16),
 
-                // ---- Data ----
+                // ---- 数据 ----
                 _sectionHeader('数据', secondaryColor),
-                ListTile(
-                  leading: const Icon(Icons.delete_outline),
-                  title: const Text('清除 WebView 缓存'),
-                  subtitle: Text(
-                    '保留登录状态',
-                    style: TextStyle(fontSize: 12, color: secondaryColor),
-                  ),
-                  onTap: _handleClearCache,
+                _buildTile(
+                  icon: Icons.delete_outline,
+                  iconColor: Colors.red,
+                  title: '清除 WebView 缓存',
+                  subtitle: '保留登录状态',
+                  secondaryColor: secondaryColor,
+                  onTap: () => _handleClearCache(context),
                 ),
 
                 const Divider(height: 1, indent: 16, endIndent: 16),
 
-                // ---- Services ----
-                _sectionHeader('收录服务 · 国内', secondaryColor),
-                ...aiServices
-                    .where((s) => s.region == 'domestic')
-                    .map((service) => _buildServiceTile(service, secondaryColor)),
+                // ---- 其他 ----
+                _sectionHeader('其他', secondaryColor),
+                _buildTile(
+                  icon: Icons.notifications_outlined,
+                  iconColor: Colors.yellow[700]!,
+                  title: '通知设置',
+                  onTap: () => print('notification settings'),
+                ),
+                _buildTile(
+                  icon: Icons.info_outline,
+                  iconColor: Colors.grey,
+                  title: '关于/版本',
+                  subtitle: 'v$appVersion',
+                  secondaryColor: secondaryColor,
+                  onTap: () => _showAboutDialog(context),
+                ),
 
-                const Divider(height: 1, indent: 16, endIndent: 16),
-
-                _sectionHeader('收录服务 · 国外', secondaryColor),
-                ...aiServices
-                    .where((s) => s.region == 'overseas')
-                    .map((service) => _buildServiceTile(service, secondaryColor)),
+                const SizedBox(height: 24),
               ],
             ),
           );
@@ -183,59 +131,103 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // ---- Update Logic ----
-
-  void _handleCheckUpdate() async {
-    setState(() => _isCheckingUpdate = true);
-
-    final update = await UpdateService().checkForUpdate(appVersion);
-
-    if (!mounted) return;
-    setState(() => _isCheckingUpdate = false);
-
-    if (update == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已是最新版本')),
-      );
-      return;
-    }
-
-    _showUpdateDialog(update);
+  Widget _buildTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    Color? secondaryColor,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Icon(icon, color: iconColor),
+      title: Text(title),
+      subtitle: subtitle != null && secondaryColor != null
+          ? Text(
+              subtitle,
+              style: TextStyle(fontSize: 12, color: secondaryColor),
+            )
+          : null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
   }
 
-  void _showUpdateDialog(Map<String, dynamic> update) {
-    final version = update['latestVersion'] as String;
-    final notes = update['releaseNotes'] as String;
-    final url = update['downloadUrl'] as String;
-
+  void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('发现新版本 v$version'),
-        content: SingleChildScrollView(child: Text(notes)),
+        title: const Text('深色模式'),
+        content: RadioGroup<ThemeMode>(
+          groupValue: themeProvider.themeMode,
+          onChanged: (value) {
+            if (value != null) themeProvider.setThemeMode(value);
+            Navigator.of(ctx).pop();
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              RadioListTile<ThemeMode>(
+                title: Text('深色'),
+                value: ThemeMode.dark,
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text('浅色'),
+                value: ThemeMode.light,
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text('跟随系统'),
+                value: ThemeMode.system,
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: const Text('去下载'),
           ),
         ],
       ),
     );
   }
 
-  // ---- Cache Clearing Logic ----
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('关于 AiHub'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('AI 聚合服务平台'),
+            const SizedBox(height: 8),
+            Text('版本: v$appVersion'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('关闭'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              // TODO: 检查更新
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('检查更新功能开发中')),
+              );
+            },
+            child: const Text('检查更新'),
+          ),
+        ],
+      ),
+    );
+  }
 
-  void _handleClearCache() {
+  void _handleClearCache(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -251,13 +243,13 @@ class _SettingsPageState extends State<SettingsPage> {
               Navigator.of(ctx).pop();
               try {
                 await _channel.invokeMethod('clearWebCache');
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('缓存已清除')),
                   );
                 }
               } on PlatformException catch (_) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('清除失败，请稍后重试')),
                   );
