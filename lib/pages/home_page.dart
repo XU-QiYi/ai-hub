@@ -141,14 +141,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-        ],
       ),
       body: Stack(
         children: [

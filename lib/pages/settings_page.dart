@@ -70,7 +70,10 @@ class _SettingsPageState extends State<SettingsPage> {
     final primaryTextColor = AppColors.primaryText(isDark: isDark);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: AppBar(
+        title: const Text('设置'),
+        automaticallyImplyLeading: false,
+      ),
       body: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return SingleChildScrollView(

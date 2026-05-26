@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'config/theme_config.dart';
 import 'providers/theme_provider.dart';
-import 'pages/home_page.dart';
-import 'pages/settings_page.dart';
+import 'pages/main_shell.dart';
 import 'services/update_service.dart';
 
 /// App version, keep in sync with pubspec.yaml version field.
@@ -68,14 +67,11 @@ class _MyAppState extends State<MyApp> {
               surface: Color(0xFF08090D),
             ),
           ),
-          home: const HomePage(),
-          routes: {
-            '/settings': (context) => SettingsPage(
-                  initialUpdate: _availableUpdate,
-                  onClearUpdate: () =>
-                      setState(() => _availableUpdate = null),
-                ),
-          },
+          home: MainShell(
+            initialUpdate: _availableUpdate,
+            onClearUpdate: () =>
+                setState(() => _availableUpdate = null),
+          ),
         );
       },
     );
