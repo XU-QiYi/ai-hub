@@ -86,9 +86,6 @@ class _SortHidePageState extends State<SortHidePage> {
 
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
-      if (oldIndex < newIndex) {
-        newIndex -= 1;
-      }
       final item = _services.removeAt(oldIndex);
       _services.insert(newIndex, item);
     });
@@ -147,7 +144,7 @@ class _SortHidePageState extends State<SortHidePage> {
             child: ReorderableListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _services.length,
-              onReorder: _onReorder,
+              onReorderItem: _onReorder,
               itemBuilder: (context, index) {
                 final service = _services[index];
                 final isHidden = _hiddenNames.contains(service.name);

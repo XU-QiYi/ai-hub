@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/week_utils.dart';
 
@@ -49,17 +50,17 @@ class StorageService {
   /// Get the list of hidden service names.
   Future<List<String>> getHiddenServices() async {
     final result = _prefs?.getStringList('hidden_services') ?? [];
-    print('[AiHub] StorageService getHiddenServices: $result');
+    debugPrint('[AiHub] StorageService getHiddenServices: $result');
     return result;
   }
 
   /// Set the list of hidden service names.
   Future<void> setHiddenServices(List<String> services) async {
-    print('[AiHub] StorageService setHiddenServices: $services');
+    debugPrint('[AiHub] StorageService setHiddenServices: $services');
     await _prefs?.setStringList('hidden_services', services);
     // 验证保存是否成功
     final saved = _prefs?.getStringList('hidden_services') ?? [];
-    print('[AiHub] StorageService setHiddenServices verify: $saved');
+    debugPrint('[AiHub] StorageService setHiddenServices verify: $saved');
   }
 
   /// Get custom order of service names (null if not set).
@@ -82,5 +83,15 @@ class StorageService {
   Future<void> saveCustomPlatforms(List<Map<String, dynamic>> platforms) async {
     final jsonList = platforms.map((p) => jsonEncode(p)).toList();
     await _prefs?.setStringList('custom_platforms', jsonList);
+  }
+
+  /// Get the selected language code. Default is "zh-CN".
+  Future<String> getLanguage() async {
+    return _prefs?.getString('language') ?? 'zh-CN';
+  }
+
+  /// Set the selected language code.
+  Future<void> setLanguage(String languageCode) async {
+    await _prefs?.setString('language', languageCode);
   }
 }

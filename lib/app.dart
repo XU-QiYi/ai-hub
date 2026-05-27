@@ -6,7 +6,7 @@ import 'pages/main_shell.dart';
 import 'services/update_service.dart';
 
 /// App version, keep in sync with pubspec.yaml version field.
-const String appVersion = "1.1.0";
+const String appVersion = "1.3.0";
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -69,8 +69,7 @@ class _MyAppState extends State<MyApp> {
           ),
           home: MainShell(
             initialUpdate: _availableUpdate,
-            onClearUpdate: () =>
-                setState(() => _availableUpdate = null),
+            onClearUpdate: () => setState(() => _availableUpdate = null),
           ),
         );
       },
